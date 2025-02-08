@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>2048 Oyunu</title>
+  <!-- Google Fonts (Roboto) -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+  <style>
+    /* Genel Sayfa Stili */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #faf8ef;
+      margin: 0;
+      padding: 0;
+      color: #776e65;
+      text-align: center;
+    }
+    /* Header: Başlık, Skorlar, Undo & Restart Butonları */
+    .header {
+      background: #bbada0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header .title {
+      font-size: 48px;
+      color: #f9f6f2;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .header-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      align-items: center;
+    }
+    .score-box {
+      background: #edc22e;
+      padding: 10px 20px;
+      border-radius: 3px;
+      color: #f9f6f2;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .control-buttons button {
+      background: #f9f6f2;
+      color: #776e65;
+      border: 2px solid #8f7a66;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .control-buttons button:hover {
+      background: #eee4da;
+    }
+    .control-buttons button:active {
+      transform: translateY(2px);
+    }
+    /* Game Container: Sol tarafta grid, sağ tarafta WASD Kontrolleri */
+    .game-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+      margin: 20px auto;
+      max-width: 800px;
+    }
+    .grid-container {
+      background: #bbada0;
+      border-radius: 6px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-gap: 10px;
+    }
+    .grid-item {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      font-weight: 700;
+      border-radius: 3px;
+      user-select: none;
+    }
+    /* WASD Kontrolleri: Sağ tarafta yer alacak */
+    .wasd-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-gap: 10px;
+      grid-template-areas:
+        ". w ."
+        "a s d";
+      justify-content: center;
+      align-items: center;
+    }
+    .wasd-controls .key {
+      background: #8f7a66;
+      color: #f9f6f2;
+      width: 60px;
+      height: 60px;
+      line-height: 60px;
+      font-size: 20px;
+      border-radius: 3px;
+      font-weight: 700;
+      box-shadow: 0 3px 0 #7e6b58;
+      user-select: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .wasd-controls .key:hover {
+      background: #7e6b58;
+    }
+    .wasd-controls .key.empty {
+      background: transparent;
+      box-shadow: none;
+      cursor: default;
+    }
+    .wasd-controls .key.w { grid-area: w; }
+    .wasd-controls .key.a { grid-area: a; }
+    .wasd-controls .key.s { grid-area: s; }
+    .wasd-controls .key.d { grid-area: d; }
+    /* Kullanım Kılavuzu */
+    .usage-guide {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #eee4da;
+      border-radius: 6px;
+      text-align: left;
+      color: #776e65;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .usage-guide h2 {
+      margin-top: 0;
+      color: #8f7a66;
+    }
+    .usage-guide ul {
+      padding-left: 20px;
+    }
+    /* Game Over Mesajı */
+    .game-over {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px auto;
+      max-width: 600px;
+    }
+    /* Drag Indicator (Yön Göstergesi) */
+    .drag-indicator {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      font-size: 32px;
+      opacity: 0.8;
+      color: #ff0000;
+    }
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: #aaa;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header: Başlık, Skorlar, Undo & Restart Butonları -->
+  <div class="header">
+    <div class="title">2048</div>
+    <div class="header-controls">
+      <div class="score-box">Skor: {{ score }}</div>
+      <div class="score-box">En Yüksek: {{ best }}</div>
+      <div class="control-buttons">
+        <button class="undo-button" onclick="location.href='{{ url_for('undo') }}'">Undo</button>
+        <button class="reset-button" onclick="location.href='{{ url_for('reset') }}'">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Container: Sol tarafta grid, sağ tarafta WASD Kontrolleri -->
+  <div class="game-container">
+    <div class="grid-container" id="gridContainer">
+      {% for row in board %}
+        {% for cell in row %}
+          <div class="grid-item" style="background-color: {{ tile_colors[cell] }};">
+            {% if cell != 0 %}{{ cell }}{% endif %}
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+    <div class="wasd-controls">
+      <div class="key empty"></div>
+      <div class="key w" onclick="submitMove('w')">W</div>
+      <div class="key empty"></div>
+      <div class="key a" onclick="submitMove('a')">A</div>
+      <div class="key s" onclick="submitMove('s')">S</div>
+      <div class="key d" onclick="submitMove('d')">D</div>
+    </div>
+  </div>
+
+  <!-- Eğer Oyun Bitti (Kaybettiyseniz) Mesajı Göster -->
+  {% if state == 'KAYIP' %}
+  <div class="game-over">
+    <h2>Kaybettiniz!</h2>
+    <p>Oyun alanında hamle yapılabilecek yer kalmadı. Yeniden başlamak için Restart butonuna tıklayınız.</p>
+  </div>
+  {% endif %}
+
+  <!-- Kullanım Kılavuzu -->
+  <div class="usage-guide">
+    <h2>Kullanım Kılavuzu</h2>
+    <ul>
+      <li>2048'e ulaşırsanız kazanırsınız. Eğer hamle yapılacak alan kalmazsa oyun sona erer.</li>
+      <li>Klavyenizdeki WSAD tuşlarını, sağ taraftaki WASD butonlarını, fare ile sürüklemeyi veya dokunmatik ekranlarda swipe hareketini kullanarak hamle yapabilirsiniz.</li>
+      <li>Üstteki Undo butonuna tıklayarak son hamlenizi geri alabilirsiniz.</li>
+      <li>Üstteki Restart butonuna tıklayarak oyunu sıfırlayabilirsiniz.</li>
+    </ul>
+  </div>
+
+  <!-- Klavye, Dokunma ve Fare Drag Dinleyicileri -->
+  <script>
+    // Klavye Dinleyicisi
+    document.addEventListener("keydown", function(e) {
+      let direction = "";
+      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+        direction = "w";
+      } else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
+        direction = "s";
+      } else if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+        direction = "a";
+      } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+        direction = "d";
+      }
+      if (direction !== "") {
+        submitMove(direction);
+      }
+    });
+
+    // Dokunma (Swipe) Dinleyicileri
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    document.addEventListener("touchstart", function(e) {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, false);
+
+    document.addEventListener("touchend", function(e) {
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+      handleTouchGesture();
+    }, false);
+
+    function handleTouchGesture() {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      const threshold = 50;
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > threshold) {
+          submitMove("d");
+        } else if (deltaX < -threshold) {
+          submitMove("a");
+        }
+      } else {
+        if (deltaY > threshold) {
+          submitMove("s");
+        } else if (deltaY < -threshold) {
+          submitMove("w");
+        }
+      }
+    }
+
+    // Fare (Mouse Drag) Dinleyicileri ve Drag Indicator
+    let mouseDown = false;
+    let mouseStartX = 0;
+    let mouseStartY = 0;
+    let dragIndicator = null;
+
+    document.addEventListener("mousedown", function(e) {
+      mouseDown = true;
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+      // Drag indicator'ı oluştur
+      dragIndicator = document.createElement("div");
+      dragIndicator.className = "drag-indicator";
+      // Örneğin Unicode ok simgesi (başlangıçta sağa işaret ediyor)
+      dragIndicator.innerHTML = "&#8594;";
+      document.body.appendChild(dragIndicator);
+      updateDragIndicator(e);
+    });
+
+    document.addEventListener("mousemove", function(e) {
+      if (!mouseDown) return;
+      updateDragIndicator(e);
+    });
+
+    function updateDragIndicator(e) {
+      let currentX = e.clientX;
+      let currentY = e.clientY;
+      let deltaX = currentX - mouseStartX;
+      let deltaY = currentY - mouseStartY;
+      // Drag indicator'ı fare imlecinin biraz yanında konumlandır
+      dragIndicator.style.left = (currentX + 10) + "px";
+      dragIndicator.style.top = (currentY + 10) + "px";
+      // Yön açısını hesapla (derece cinsinden)
+      let angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+      dragIndicator.style.transform = "rotate(" + angle + "deg)";
+    }
+
+    document.addEventListener("mouseup", function(e) {
+      if (!mouseDown) return;
+      mouseDown = false;
+      let deltaX = e.clientX - mouseStartX;
+      let deltaY = e.clientY - mouseStartY;
+      let threshold = 50;
+      let direction = "";
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > threshold) {
+          direction = "d";
+        } else if (deltaX < -threshold) {
+          direction = "a";
+        }
+      } else {
+        if (deltaY > threshold) {
+          direction = "s";
+        } else if (deltaY < -threshold) {
+          direction = "w";
+        }
+      }
+      // Drag indicator'ı kaldır
+      if (dragIndicator) {
+        document.body.removeChild(dragIndicator);
+        dragIndicator = null;
+      }
+      if (direction !== "") {
+        submitMove(direction);
+      }
+    });
+
+    // submitMove Fonksiyonu
+    function submitMove(direction) {
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "/move";
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "direction";
+      input.value = direction;
+      form.appendChild(input);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  </script>
+
+  <!-- Footer -->
+  <footer>
+    &copy; 2025 Kardelen Geçkin. Tüm hakları saklıdır.
+  </footer>
+</body>
+</html>

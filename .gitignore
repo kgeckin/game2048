@@ -1,0 +1,21 @@
+# Python derleme ve cache dosyaları
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Sanal ortam klasörleri
+venv/
+env/
+
+# Hassas bilgileri içeren .env dosyası
+.env
+
+# IDE ve editör dosyaları (örn. VSCode)
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Log ve geçici dosyalar
+*.log
+*.tmp
