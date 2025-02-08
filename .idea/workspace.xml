@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="293fdbdb-dfd8-4284-8d22-6b51603e5bcf" name="Changes" comment="">
+    <list default="true" id="293fdbdb-dfd8-4284-8d22-6b51603e5bcf" name="Changes" comment="remove footer">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -82,8 +82,17 @@
       <updated>1737300676627</updated>
       <workItem from="1737300677741" duration="1308000" />
       <workItem from="1739020949818" duration="12264000" />
-      <workItem from="1739033460483" duration="3494000" />
+      <workItem from="1739033460483" duration="3798000" />
     </task>
+    <task id="LOCAL-00001" summary="remove footer">
+      <option name="closed" value="true" />
+      <created>1739037201024</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1739037201024</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -99,6 +108,10 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="remove footer" />
+    <option name="LAST_COMMIT_MESSAGE" value="remove footer" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/game2048$app.coverage" NAME="app Coverage Results" MODIFIED="1739036986884" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
