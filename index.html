@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>2048 Oyunu</title>
+  <!-- Google Fonts (Roboto) -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <style>
+    /* Genel Sayfa Stili */
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #faf8ef;
+      margin: 0;
+      padding: 0;
+      color: #776e65;
+      text-align: center;
+    }
+    /* Header: Başlık, Skorlar, Undo & Restart Butonları */
+    .header {
+      background: #bbada0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header .title {
+      font-size: 48px;
+      color: #f9f6f2;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .header-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      align-items: center;
+    }
+    .score-box {
+      background: #edc22e;
+      padding: 10px 20px;
+      border-radius: 3px;
+      color: #f9f6f2;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .control-buttons button {
+      background: #f9f6f2;
+      color: #776e65;
+      border: 2px solid #8f7a66;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .control-buttons button:hover {
+      background: #eee4da;
+    }
+    .control-buttons button:active {
+      transform: translateY(2px);
+    }
+    /* Game Container: Sol tarafta grid, sağ tarafta WASD Kontrolleri */
+    .game-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 20px;
+      margin: 20px auto;
+      max-width: 800px;
+    }
+    .grid-container {
+      background: #bbada0;
+      border-radius: 6px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-gap: 10px;
+    }
+    .grid-item {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      font-weight: 700;
+      border-radius: 3px;
+      user-select: none;
+    }
+    /* WASD Kontrolleri: Sağ tarafta yer alacak */
+    .wasd-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-gap: 10px;
+      grid-template-areas:
+        ". w ."
+        "a s d";
+      justify-content: center;
+      align-items: center;
+    }
+    .wasd-controls .key {
+      background: #8f7a66;
+      color: #f9f6f2;
+      width: 60px;
+      height: 60px;
+      line-height: 60px;
+      font-size: 20px;
+      border-radius: 3px;
+      font-weight: 700;
+      box-shadow: 0 3px 0 #7e6b58;
+      user-select: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .wasd-controls .key:hover {
+      background: #7e6b58;
+    }
+    .wasd-controls .key.empty {
+      background: transparent;
+      box-shadow: none;
+      cursor: default;
+    }
+    .wasd-controls .key.w { grid-area: w; }
+    .wasd-controls .key.a { grid-area: a; }
+    .wasd-controls .key.s { grid-area: s; }
+    .wasd-controls .key.d { grid-area: d; }
+    /* Kullanım Kılavuzu */
+    .usage-guide {
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #eee4da;
+      border-radius: 6px;
+      text-align: left;
+      color: #776e65;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .usage-guide h2 {
+      margin-top: 0;
+      color: #8f7a66;
+    }
+    .usage-guide ul {
+      padding-left: 20px;
+    }
+    /* Game Over Mesajı */
+    .game-over {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px auto;
+      max-width: 600px;
+    }
+    /* Drag Indicator (Yön Göstergesi) */
+    .drag-indicator {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1000;
+      font-size: 32px;
+      opacity: 0.8;
+      color: #ff0000;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header: Başlık, Skorlar, Undo & Restart Butonları -->
+  <div class="header">
+    <div class="title">2048</div>
+    <div class="header-controls">
+      <div class="score-box" id="scoreBox">Skor: 0</div>
+      <div class="score-box" id="bestBox">En Yüksek: 0</div>
+      <div class="control-buttons">
+        <button onclick="undoMove()">Undo</button>
+        <button onclick="resetGame()">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Container: Sol tarafta grid, sağ tarafta WASD Kontrolleri -->
+  <div class="game-container">
+    <div class="grid-container" id="gridContainer">
+      <!-- JavaScript ile doldurulacak -->
+    </div>
+    <div class="wasd-controls">
+      <div class="key empty"></div>
+      <div class="key w" onclick="makeMove('w')">W</div>
+      <div class="key empty"></div>
+      <div class="key a" onclick="makeMove('a')">A</div>
+      <div class="key s" onclick="makeMove('s')">S</div>
+      <div class="key d" onclick="makeMove('d')">D</div>
+    </div>
+  </div>
+
+  <!-- Oyun Durum Mesajı (Gerekirse JavaScript ile eklenebilir) -->
+  <div id="gameStatus"></div>
+
+  <!-- Kullanım Kılavuzu -->
+  <div class="usage-guide">
+    <h2>Kullanım Kılavuzu</h2>
+    <ul>
+      <li>2048'e ulaşırsanız kazanırsınız. Eğer hamle yapılacak alan kalmazsa oyun sona erer.</li>
+      <li>Klavyenizdeki WSAD tuşlarını, sağ taraftaki WASD butonlarını, fare ile sürüklemeyi veya dokunmatik ekranlarda swipe hareketini kullanarak hamle yapabilirsiniz.</li>
+      <li>Üstteki Undo butonuna tıklayarak son hamlenizi geri alabilirsiniz.</li>
+      <li>Üstteki Restart butonuna tıklayarak oyunu sıfırlayabilirsiniz.</li>
+    </ul>
+  </div>
+
+  <!-- Klavye, Dokunma ve Fare Drag Dinleyicileri ile Oyun Mantığı -->
+  <script>
+    /********** Oyun Mantığı (JavaScript Versiyonu) **********/
+    // Renkler (tile_colors) sözlüğü
+    const tile_colors = {
+      0: "#CDC1B4",
+      2: "#EEE4DA",
+      4: "#EDE0C8",
+      8: "#F2B179",
+      16: "#F59563",
+      32: "#F67C5F",
+      64: "#F65E3B",
+      128: "#EDCF72",
+      256: "#EDCC61",
+      512: "#EDC850",
+      1024: "#EDC53F",
+      2048: "#EDC22E"
+    };
+
+    // Gizli anahtar (bu anahtarın istemci tarafında olması tam güvenlik sağlamaz; önemli uygulamalarda sunucu tarafı doğrulaması tercih edilmeli)
+    const SECRET_KEY = "gizliAnahtar123";
+
+    // localStorage'dan best değerini HMAC doğrulamasıyla oku
+    function getBest() {
+    const storedBest = localStorage.getItem("best");
+    const storedHmac = localStorage.getItem("bestHmac");
+    if (storedBest && storedHmac) {
+        const computedHmac = CryptoJS.HmacSHA256(storedBest, SECRET_KEY).toString();
+        if (computedHmac === storedHmac) {
+        return parseInt(storedBest);
+        } else {
+        // İmzalar uyuşmuyorsa veride müdahale olmuş demektir; güvenli saymak için sıfırla.
+        return 0;
+        }
+    }
+    return 0;
+    }
+
+    // Best değerini güncelle ve HMAC oluştur
+    function updateBest(newScore) {
+    localStorage.setItem("best", newScore);
+    const newHmac = CryptoJS.HmacSHA256(newScore, SECRET_KEY).toString();
+    localStorage.setItem("bestHmac", newHmac);
+    }
+
+    // Global değişkenler
+    let board, score, prevBoard, prevScore;
+    const gridSize = 4;
+    let best = getBest();
+
+    // Yeni oyunu başlatır (başlangıçta iki adet "2" ekler)
+    function startGame() {
+        board = [];
+        for (let i = 0; i < gridSize; i++) {
+            board.push(new Array(gridSize).fill(0));
+        }
+        score = 0;
+        // Eğer best değeri tanımlı değilse 0 ile başlat
+        if (typeof best === "undefined") {
+            best = 0;
+        }
+        addNewTile();
+        addNewTile();
+        updateBoard();
+    }
+
+    // Rastgele boş hücreye "2" ekler
+    function addNewTile() {
+      let emptyCells = [];
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          if (board[i][j] === 0) {
+            emptyCells.push({ i, j });
+          }
+        }
+      }
+      if (emptyCells.length === 0) return;
+      let cell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+      board[cell.i][cell.j] = 2;
+    }
+
+    // Oyun durumunu kontrol eder: kazanıldı, henüz hamle varsa veya kaybedildi mi?
+    function getCurrentState() {
+      // Kazanma kontrolü
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          if (board[i][j] === 2048) return "KAZANDI";
+        }
+      }
+      // Boş hücre varsa oyun devam ediyor
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          if (board[i][j] === 0) return "OYUN BİTMEDİ";
+        }
+      }
+      // Yatay birleşme kontrolü
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize - 1; j++) {
+          if (board[i][j] === board[i][j+1]) return "OYUN BİTMEDİ";
+        }
+      }
+      // Dikey birleşme kontrolü
+      for (let j = 0; j < gridSize; j++) {
+        for (let i = 0; i < gridSize - 1; i++) {
+          if (board[i][j] === board[i+1][j]) return "OYUN BİTMEDİ";
+        }
+      }
+      return "KAYIP";
+    }
+
+    // Her satırdaki sayıların sola kaydırılması (sıfır olmayan değerleri toplayıp yeniden yerleştirir)
+    function compress(mat) {
+      let newMat = [];
+      let changed = false;
+      for (let i = 0; i < gridSize; i++) {
+        newMat[i] = [];
+        let pos = 0;
+        for (let j = 0; j < gridSize; j++) {
+          if (mat[i][j] !== 0) {
+            newMat[i][pos] = mat[i][j];
+            if (j !== pos) changed = true;
+            pos++;
+          }
+        }
+        while (newMat[i].length < gridSize) {
+          newMat[i].push(0);
+        }
+      }
+      return { newMat, changed };
+    }
+
+    // Aynı sayılar birleştirilir; skor artışı hesaplanır
+    function merge(mat) {
+      let changed = false;
+      let scoreInc = 0;
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize - 1; j++) {
+          if (mat[i][j] === mat[i][j+1] && mat[i][j] !== 0) {
+            mat[i][j] *= 2;
+            scoreInc += mat[i][j];
+            mat[i][j+1] = 0;
+            changed = true;
+          }
+        }
+      }
+      return { mat, changed, scoreInc };
+    }
+
+    // Matrisin satırlarını ters çevirir
+    function reverse(mat) {
+      let newMat = [];
+      for (let i = 0; i < gridSize; i++) {
+        newMat[i] = mat[i].slice().reverse();
+      }
+      return newMat;
+    }
+
+    // Matrisin transpozesini alır
+    function transpose(mat) {
+      let newMat = [];
+      for (let i = 0; i < gridSize; i++) {
+        newMat[i] = [];
+        for (let j = 0; j < gridSize; j++) {
+          newMat[i][j] = mat[j][i];
+        }
+      }
+      return newMat;
+    }
+
+    // Sol hareket: compress → merge → compress
+    function moveLeft(mat) {
+      let comp = compress(mat);
+      let newMat = comp.newMat;
+      let changed1 = comp.changed;
+      let mergeResult = merge(newMat);
+      newMat = mergeResult.mat;
+      let changed2 = mergeResult.changed;
+      let scoreInc = mergeResult.scoreInc;
+      let comp2 = compress(newMat);
+      newMat = comp2.newMat;
+      let changed = changed1 || changed2;
+      return { newMat, changed, scoreInc };
+    }
+
+    // Sağa hareket: Matrisin ters çevrilip sol hareket uygulanır, sonra tekrar ters çevrilir
+    function moveRight(mat) {
+      let reversedMat = reverse(mat);
+      let result = moveLeft(reversedMat);
+      let finalMat = reverse(result.newMat);
+      return { newMat: finalMat, changed: result.changed, scoreInc: result.scoreInc };
+    }
+
+    // Yukarı hareket: Matrisin transpoze edilip sol hareket uygulanır, sonra tekrar transpoze edilir
+    function moveUp(mat) {
+      let transposedMat = transpose(mat);
+      let result = moveLeft(transposedMat);
+      let finalMat = transpose(result.newMat);
+      return { newMat: finalMat, changed: result.changed, scoreInc: result.scoreInc };
+    }
+
+    // Aşağı hareket: Transpoze edilip sağa hareket uygulanır, sonra tekrar transpoze edilir
+    function moveDown(mat) {
+      let transposedMat = transpose(mat);
+      let result = moveRight(transposedMat);
+      let finalMat = transpose(result.newMat);
+      return { newMat: finalMat, changed: result.changed, scoreInc: result.scoreInc };
+    }
+
+    // Tahtayı (grid) ve skorları HTML’e yansıtır
+    function updateBoard() {
+      const gridContainer = document.getElementById("gridContainer");
+      gridContainer.innerHTML = "";
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          let cell = document.createElement("div");
+          cell.className = "grid-item";
+          let tileColor = tile_colors[board[i][j]] || "#CDC1B4";
+          cell.style.backgroundColor = tileColor;
+          cell.textContent = board[i][j] !== 0 ? board[i][j] : "";
+          gridContainer.appendChild(cell);
+        }
+      }
+      document.getElementById("scoreBox").textContent = "Skor: " + score;
+      document.getElementById("bestBox").textContent = "En Yüksek: " + best;
+    }
+
+    // Hamle yapıldığında (WSAD, ok tuşları, dokunmatik/fare hareketi) çalışır
+    function makeMove(direction) {
+      // Undo için mevcut durumu yedekle
+      prevBoard = board.map(row => row.slice());
+      prevScore = score;
+
+      let result;
+      if (direction === "w") {
+        result = moveUp(board);
+      } else if (direction === "s") {
+        result = moveDown(board);
+      } else if (direction === "a") {
+        result = moveLeft(board);
+      } else if (direction === "d") {
+        result = moveRight(board);
+      }
+      if (result && result.changed) {
+        board = result.newMat;
+        score += result.scoreInc;
+        if (score > best) {
+            best = score;
+            updateBest(best);
+        }
+        addNewTile();
+      }
+      updateBoard();
+      let state = getCurrentState();
+      if (state === "KAYIP") {
+        setTimeout(() => alert("Kaybettiniz!"), 10);
+      } else if (state === "KAZANDI") {
+        setTimeout(() => alert("Tebrikler, kazandınız!"), 10);
+      }
+    }
+
+    // Undo: Bir önceki hamleye geri döner
+    function undoMove() {
+      if (prevBoard) {
+        board = prevBoard.map(row => row.slice());
+        score = prevScore;
+        updateBoard();
+      }
+    }
+
+    // Reset: Oyunu sıfırlar
+    function resetGame() {
+      startGame();
+    }
+
+    /********** Klavye, Dokunmatik ve Fare Dinleyicileri **********/
+    // Klavye Dinleyicisi
+    document.addEventListener("keydown", function(e) {
+      let direction = "";
+      if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+        direction = "w";
+      } else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
+        direction = "s";
+      } else if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+        direction = "a";
+      } else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+        direction = "d";
+      }
+      if (direction !== "") {
+        makeMove(direction);
+      }
+    });
+
+    // Dokunmatik (Swipe) Dinleyicileri
+    let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+    document.addEventListener("touchstart", function(e) {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, false);
+    document.addEventListener("touchend", function(e) {
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+      handleTouchGesture();
+    }, false);
+    function handleTouchGesture() {
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+      const threshold = 50;
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > threshold) {
+          makeMove("d");
+        } else if (deltaX < -threshold) {
+          makeMove("a");
+        }
+      } else {
+        if (deltaY > threshold) {
+          makeMove("s");
+        } else if (deltaY < -threshold) {
+          makeMove("w");
+        }
+      }
+    }
+
+    // Fare (Mouse Drag) Dinleyicileri ve Drag Indicator
+    let mouseDown = false, mouseStartX = 0, mouseStartY = 0, dragIndicator = null;
+    document.addEventListener("mousedown", function(e) {
+      mouseDown = true;
+      mouseStartX = e.clientX;
+      mouseStartY = e.clientY;
+      dragIndicator = document.createElement("div");
+      dragIndicator.className = "drag-indicator";
+      dragIndicator.innerHTML = "&#8594;"; // Başlangıç yönü
+      document.body.appendChild(dragIndicator);
+      updateDragIndicator(e);
+    });
+    document.addEventListener("mousemove", function(e) {
+      if (!mouseDown) return;
+      updateDragIndicator(e);
+    });
+    function updateDragIndicator(e) {
+      let currentX = e.clientX, currentY = e.clientY;
+      let deltaX = currentX - mouseStartX, deltaY = currentY - mouseStartY;
+      dragIndicator.style.left = (currentX + 10) + "px";
+      dragIndicator.style.top = (currentY + 10) + "px";
+      let angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+      dragIndicator.style.transform = "rotate(" + angle + "deg)";
+    }
+    document.addEventListener("mouseup", function(e) {
+      if (!mouseDown) return;
+      mouseDown = false;
+      let deltaX = e.clientX - mouseStartX, deltaY = e.clientY - mouseStartY, threshold = 50, direction = "";
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > threshold) {
+          direction = "d";
+        } else if (deltaX < -threshold) {
+          direction = "a";
+        }
+      } else {
+        if (deltaY > threshold) {
+          direction = "s";
+        } else if (deltaY < -threshold) {
+          direction = "w";
+        }
+      }
+      if (dragIndicator) {
+        document.body.removeChild(dragIndicator);
+        dragIndicator = null;
+      }
+      if (direction !== "") {
+        makeMove(direction);
+      }
+    });
+
+    // Başlangıçta oyunu başlatır
+    startGame();
+  </script>
+</body>
+</html>
