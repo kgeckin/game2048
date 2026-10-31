@@ -174,8 +174,12 @@
       <div class="score-box">Skor: {{ score }}</div>
       <div class="score-box">En Yüksek: {{ best }}</div>
       <div class="control-buttons">
-        <button class="undo-button" onclick="location.href='{{ url_for('undo') }}'">Undo</button>
-        <button class="reset-button" onclick="location.href='{{ url_for('reset') }}'">Restart</button>
+        <form method="POST" action="{{ url_for('undo') }}">
+          <button type="submit" class="undo-button">Undo</button>
+        </form>
+        <form method="POST" action="{{ url_for('reset') }}">
+          <button type="submit" class="reset-button">Restart</button>
+        </form>
       </div>
     </div>
   </div>
