@@ -19,3 +19,10 @@ env/
 # Log ve geçici dosyalar
 *.log
 *.tmp
+
+# Project-local IDE and environments
+.idea/
+.venv/
+.pytest_cache/
+.env.*
+!.env.example
