@@ -3,12 +3,14 @@ from flask import Flask, render_template, redirect, url_for, request, session
 import logic
 import copy  # Derin kopyalama için
 import os
+import secrets
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "varsayılan_gizli_anahtar")
+app.secret_key = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
 
 # Hücre renkleri sözlüğü
 tile_colors = {
@@ -48,6 +50,9 @@ def move():
         mat = logic.start_game()
         session["score"] = 0
 
+    if direction not in {"w", "a", "s", "d"}:
+        return redirect(url_for("index"))
+
     # Hamleden önce mevcut durumu yedekleyelim (undo için)
     session["prev_board"] = copy.deepcopy(mat)
     session["prev_score"] = session.get("score", 0)
@@ -74,7 +79,7 @@ def move():
     session["mat"] = mat
     return redirect(url_for("index"))
 
-@app.route("/undo")
+@app.post("/undo")
 def undo():
     # Önceki durumu (board ve score) geri yükle
     if "prev_board" in session and "prev_score" in session:
@@ -82,7 +87,7 @@ def undo():
         session["score"] = session["prev_score"]
     return redirect(url_for("index"))
 
-@app.route("/reset")
+@app.post("/reset")
 def reset():
     session.pop("mat", None)
     session.pop("score", None)
@@ -90,4 +95,4 @@ def reset():
     return redirect(url_for("index"))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="127.0.0.1", debug=os.getenv("FLASK_DEBUG", "false").lower() == "true")
