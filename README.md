@@ -1,68 +1,99 @@
-# 2048 Oyunu
+<div align="center">
 
-## Genel Bilgiler
-Projede farklı cihazlarda çeşitli kontrol seçenekleri sunulmaktadır:
+<img src="docs/assets/cover.svg" width="100%" alt="2048 game: Python Flask and browser-native JavaScript versions" />
 
-- **Klavye:** Ok tuşları veya WASD tuşları
-- **Ekrandaki Butonlar:** Sağ tarafta bulunan WASD butonları
-- **Dokunmatik:** Mobil cihazlarda swipe hareketi
-- **Fare:** Bilgisayarda fare sürükleme hareketi
+**The classic 2048 puzzle, implemented twice to explore both server and browser state.**
 
-Bu repoda her iki versiyon da 2048 oyununun dinamik yapısını ve çeşitli kontrol seçeneklerini içermektedir. Hangi versiyonun kullanılacağı, geliştirme amacı veya kullanım senaryosuna göre tercih edilebilir.
+[Flask setup](#getting-started) · [JavaScript version](jsCodeOnly/index.html) · [Screenshot](images/gameplay.png)
 
-Her iki uygulama da kullanıcıya etkileşimli bir oyun deneyimi sunmak üzere tasarlanmıştır. İyi eğlenceler!
+</div>
 
-### Oyuniçi Görüntüler
+## Overview
 
-![Game Play](https://github.com/kgeckin/game2048/blob/b1b9b5b9a12d8674ccc5d1d7c8ffce061a44b9b9/images/gameplay.png)
+This repository contains two independent implementations of 2048. The Python
+version uses Flask sessions to maintain the board and score. The browser
+version uses HTML, CSS and JavaScript without a Python server.
 
-**Oyunu oynayabilmek için:**  
-[Flask Versiyonu (canlı demo)](https://web.itu.edu.tr/~geckin19/)
+Players can use the keyboard, on-screen buttons and supported gestures.
 
-Bu repoda iki farklı **2048 Oyunu** uygulaması bulunmaktadır:
+<img src="images/gameplay.png" width="100%" alt="Screenshot of the 2048 game interface" />
 
-- **Flask Versiyonu:** Python Flask kullanılarak geliştirilen etkileşimli 2048 oyunu.
-- **JavaScript Versiyonu:** Sunucu tarafı olmadan, tamamen HTML, CSS ve JavaScript kullanılarak oluşturulmuş 2048 oyunu.
+## What it includes
 
----
+* A four by four game board with valid movement and tile combination rules.
+* Score tracking, undo and restart controls.
+* A Flask backend and HTML template version.
+* A standalone browser implementation in `jsCodeOnly/`.
 
-## Flask Versiyonu
+## Getting started
 
-**2048 Oyunu**, popüler 2048 oyununu temel alan, modern bir Flask uygulaması olarak geliştirilmiş etkileşimli bir projedir.  
+**Prerequisite:** Python 3.11 or later for the Flask version.
 
-### Özellikler
+```bash
+git clone https://github.com/kgeckin/game2048.git
+cd game2048
+python -m venv .venv
+```
 
-- **Dinamik Oyun Alanı:** Her hamlede oyun tahtası (grid) güncellenir.
-- **Kontrol Seçenekleri:** Klavye, ekran üzerindeki butonlar, dokunmatik swipe ve fare sürükleme ile hamle yapılabilir.
-- **Oyun Durumu Takibi:** Anlık skor, en yüksek skor (best), Undo ve Restart seçenekleri.
-- **Oyun Sonu Geri Bildirimi:** Hamle yapılabilecek alan kalmadığında “Kaybettiniz!” mesajı görüntülenir.
+Activate the virtual environment, then:
 
-### Kullanılan Teknolojiler
+```bash
+python -m pip install -r requirements.txt
+python app.py
+```
 
-- **Backend:** Flask (Python)
-- **Frontend:** HTML, CSS, JavaScript
-- **Oturum Yönetimi:** Flask session
-- **Ortam Değişkenleri Yönetimi:** python-dotenv
+The Flask game runs locally. Optionally set `SECRET_KEY` in an ignored
+`.env` file so browser sessions survive process restarts. Without it,
+the local development process generates a temporary random session key.
 
----
+To use the **JavaScript version**, open
+[jsCodeOnly/index.html](jsCodeOnly/index.html) in a browser. It does
+not require Python or Flask.
 
-## Pure JavaScript Versiyonu
+An earlier [hosted demo](https://web.itu.edu.tr/~geckin19/) is linked for
+reference. Its present availability has not been independently checked.
 
-Bu versiyonda, oyunun tüm mantığı ve arayüzü, **HTML, CSS ve JavaScript** kullanılarak tamamen istemci tarafında geliştirilmiştir. Flask veya başka bir backend teknolojisi kullanılmamaktadır.
+## Repository structure
 
-### Özellikler
+```text
+game2048/
+├── app.py             # Flask routing and game session state
+├── logic.py           # Game board movement and score logic
+├── templates/         # Flask HTML interface
+├── jsCodeOnly/        # Standalone JavaScript implementation
+├── images/            # Gameplay screenshot
+├── tests/             # Logic and Flask route tests
+├── docs/assets/       # Shared editorial cover
+├── requirements.txt
+└── requirements-dev.txt
+```
 
-- **Dinamik Oyun Alanı:** Her hamlede oyun tahtası (grid) güncellenir.
-- **Kontrol Seçenekleri:** Klavye (WSAD ve ok tuşları), ekrandaki WASD butonları, dokunmatik swipe ve fare sürükleme ile hamle yapılabilir.
-- **Skor Yönetimi:** Anlık skor ve en yüksek skor, CryptoJS kütüphanesi kullanılarak HMAC doğrulaması ile güvenli bir şekilde saklanır.
-- **Undo ve Restart Seçenekleri:** Son hamleyi geri alabilir veya oyunu sıfırlayabilirsiniz.
-- **Kullanıcı Etkileşimi:** Fare sürükleme sırasında yön göstergesi (drag indicator) ile hamle yönünüz görsel olarak desteklenir.
+## Validation
 
-### Kullanılan Teknolojiler
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q tests
+```
 
-- **Frontend:** HTML, CSS, JavaScript
-- **Güvenlik:** CryptoJS (HMAC doğrulaması ile en yüksek skorun doğrulanması)
+The unit tests cover movement, merge scoring and basic Flask route behavior.
+They do not verify every mobile browser interaction.
 
+## Architecture & decisions
 
+The Flask app manages each game's state in a signed session cookie. Board
+transformations are implemented in `logic.py` and are tested independently.
+The JavaScript version keeps its game logic in the browser.
 
+## Security & limitations
 
+* Debug mode is disabled by default and Flask binds to the loopback interface.
+* A random key replaces the previous hardcoded session secret.
+* State-changing undo and restart actions now use POST.
+* Flask's development server is not intended for production hosting.
+* Game state is maintained in the browser session and does not represent a
+  tamper-resistant score leaderboard.
+
+## License
+
+No repository license file is currently present. Establish reuse rights
+before redistributing or relicensing this code.
